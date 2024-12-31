@@ -1,0 +1,202 @@
+import requests
+from typing import Optional, List, Dict, Any
+from dotenv import load_dotenv
+import os
+
+class OddsAPI:
+    def __init__(self, api_key: Optional[str] = None):
+        load_dotenv()
+        self.api_key = api_key or os.getenv('ODDS_API_KEY')
+        if not self.api_key:
+            raise ValueError("API key must be provided either directly or through ODDS_API_KEY environment variable")
+        self.base_url = "https://api.the-odds-api.com/v4"
+    
+    def get_sports(self) -> List[Dict[str, Any]]:
+        """Get a list of all available sports."""
+        endpoint = f"{self.base_url}/sports"
+        params = {"apiKey": self.api_key}
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_odds(
+        self,
+        sport_key: str,
+        regions: str = "us",
+        markets: str = "h2h",
+        odds_format: str = "decimal",
+        date_format: str = "iso"
+    ) -> List[Dict[str, Any]]:
+        """
+        Get odds for a specific sport.
+        
+        Args:
+            sport_key: The sport key (e.g., 'americanfootball_nfl')
+            regions: Comma-separated list of regions (e.g., 'us,uk,eu')
+            markets: Comma-separated list of markets (e.g., 'h2h,spreads')
+            odds_format: Format of odds ('decimal' or 'american')
+            date_format: Format of dates ('iso' or 'unix')
+        """
+        endpoint = f"{self.base_url}/sports/{sport_key}/odds"
+        params = {
+            "apiKey": self.api_key,
+            "regions": regions,
+            "markets": markets,
+            "oddsFormat": odds_format,
+            "dateFormat": date_format
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_scores(
+        self,
+        sport_key: str,
+        daysFrom: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get scores for a specific sport.
+        
+        Args:
+            sport_key: The sport key (e.g., 'americanfootball_nfl')
+            daysFrom: Number of days from which to get historical scores
+        """
+        endpoint = f"{self.base_url}/sports/{sport_key}/scores"
+        params = {"apiKey": self.api_key}
+        if daysFrom is not None:
+            params["daysFrom"] = daysFrom
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_event_odds(
+        self,
+        sport_key: str,
+        event_id: str,
+        markets: str = "h2h",
+        regions: str = "us"
+    ) -> Dict[str, Any]:
+        """
+        Get odds for a specific event.
+        
+        Args:
+            sport_key: The sport key (e.g., 'americanfootball_nfl')
+            event_id: The specific event ID
+            markets: Comma-separated list of markets (e.g., 'h2h,spreads')
+            regions: Comma-separated list of regions (e.g., 'us,uk,eu')
+        """
+        endpoint = f"{self.base_url}/sports/{sport_key}/events/{event_id}/odds"
+        params = {
+            "apiKey": self.api_key,
+            "regions": regions,
+            "markets": markets
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_historical_odds(
+        self,
+        sport: str,
+        team: str,
+        regions: str = "us",
+        date_format: str = 'iso',
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        endpoint = f"{self.base_url}/sports/{sport}/odds-history"
+        
+        params = {
+            'apiKey': self.api_key,
+            'team': team,
+            'regions': regions,
+            'date_format': date_format
+        }
+        
+        if from_date:
+            params['from'] = from_date
+        if to_date:
+            params['to'] = to_date
+
+        response = requests.get(endpoint, params=params)
+        return response.json()
+    
+    def get_events(
+        self,
+        sport_key: str,
+        date_format: str = "iso",
+        event_ids: Optional[str] = None,
+        commence_time_from: Optional[str] = None,
+        commence_time_to: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get a list of in-play and pre-match events for a specified sport.
+        This endpoint does not count against the usage quota.
+        
+        Args:
+            sport_key: The sport key (e.g., 'americanfootball_nfl')
+            date_format: Format of dates ('iso' or 'unix')
+            event_ids: Optional comma-separated game ids to filter specific events
+            commence_time_from: Optional ISO 8601 datetime to filter events starting from
+                              (e.g., '2023-09-09T00:00:00Z')
+            commence_time_to: Optional ISO 8601 datetime to filter events until
+                            (e.g., '2023-09-10T23:59:59Z')
+        """
+        endpoint = f"{self.base_url}/sports/{sport_key}/events"
+        params = {
+            "apiKey": self.api_key,
+            "dateFormat": date_format
+        }
+        
+        if event_ids:
+            params["eventIds"] = event_ids
+        if commence_time_from:
+            params["commenceTimeFrom"] = commence_time_from
+        if commence_time_to:
+            params["commenceTimeTo"] = commence_time_to
+
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def find_event_id(
+        self,
+        sport_key: str,
+        team1: str,
+        team2: str,
+        commence_time_from: Optional[str] = None,
+        commence_time_to: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Find the event ID for a match between two specific teams.
+        
+        Args:
+            sport_key: The sport key (e.g., 'americanfootball_nfl')
+            team1: Name of the first team
+            team2: Name of the second team
+            commence_time_from: Optional ISO 8601 datetime to filter events starting from
+            commence_time_to: Optional ISO 8601 datetime to filter events until
+        
+        Returns:
+            str: Event ID if found, None if no matching event is found
+        """
+        events = self.get_events(
+            sport_key=sport_key,
+            commence_time_from=commence_time_from,
+            commence_time_to=commence_time_to
+        )
+        
+        # Normalize team names for comparison
+        team1_lower = team1.lower()
+        team2_lower = team2.lower()
+        
+        for event in events:
+            home_team = event['home_team'].lower()
+            away_team = event['away_team'].lower()
+            
+            # Check if both teams are in the event (in either order)
+            if (team1_lower in (home_team, away_team) and 
+                team2_lower in (home_team, away_team)):
+                return event['id']
+        
+        return None
