@@ -2,6 +2,7 @@ import requests
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 import os
+from datetime import datetime
 
 class OddsAPI:
     def __init__(self, api_key: Optional[str] = None):
@@ -137,7 +138,8 @@ class OddsAPI:
             sport_key: The sport key (e.g., 'americanfootball_nfl')
             date_format: Format of dates ('iso' or 'unix')
             event_ids: Optional comma-separated game ids to filter specific events
-            commence_time_from: Optional ISO 8601 datetime to filter events starting from
+            commence_time_from: Optional
+            ISO 8601 datetime to filter events starting from
                               (e.g., '2023-09-09T00:00:00Z')
             commence_time_to: Optional ISO 8601 datetime to filter events until
                             (e.g., '2023-09-10T23:59:59Z')
@@ -159,16 +161,16 @@ class OddsAPI:
         response.raise_for_status()
         return response.json()
     
-    def find_event_id(
+    def find_event_ids(
         self,
         sport_key: str,
         team1: str,
         team2: str,
         commence_time_from: Optional[str] = None,
         commence_time_to: Optional[str] = None
-    ) -> Optional[str]:
+    ) -> List[str]:
         """
-        Find the event ID for a match between two specific teams.
+        Find all event IDs for matches between two specific teams.
         
         Args:
             sport_key: The sport key (e.g., 'americanfootball_nfl')
@@ -178,25 +180,79 @@ class OddsAPI:
             commence_time_to: Optional ISO 8601 datetime to filter events until
         
         Returns:
-            str: Event ID if found, None if no matching event is found
+            List[str]: List of event IDs found, empty list if no matching events are found
         """
-        events = self.get_events(
-            sport_key=sport_key,
-            commence_time_from=commence_time_from,
-            commence_time_to=commence_time_to
-        )
-        
-        # Normalize team names for comparison
-        team1_lower = team1.lower()
-        team2_lower = team2.lower()
-        
-        for event in events:
-            home_team = event['home_team'].lower()
-            away_team = event['away_team'].lower()
+        try:
+            events = self.get_historical_events(
+                sport=sport_key,
+                commence_time_from=commence_time_from,
+                commence_time_to=commence_time_to
+            )
             
-            # Check if both teams are in the event (in either order)
-            if (team1_lower in (home_team, away_team) and 
-                team2_lower in (home_team, away_team)):
-                return event['id']
+            # Normalize team names for comparison
+            team1_lower = team1.lower().strip()
+            team2_lower = team2.lower().strip()
+            
+            matching_events = []
+            data = events.get('data', [])
+            
+            for event in data:
+                # Skip if event doesn't have required fields
+                if not all(key in event for key in ['id', 'home_team', 'away_team']):
+                    continue
+                    
+                home_team = event['home_team'].lower().strip()
+                away_team = event['away_team'].lower().strip()
+                
+                # Check if both teams are in the event (in either order)
+                if ((team1_lower in home_team or team1_lower in away_team) and 
+                    (team2_lower in home_team or team2_lower in away_team)):
+                    matching_events.append(event['id'])
+            
+            return matching_events
+            
+        except Exception as e:
+            print(f"Error finding event IDs: {str(e)}")
+            return []
+    
+    def get_historical_events(
+        self,
+        sport: str,
+        date: Optional[str] = None,
+        date_format: str = "iso",
+        event_ids: Optional[str] = None,
+        commence_time_from: Optional[str] = None,
+        commence_time_to: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get historical events data for a specific sport and date.
         
-        return None
+        Args:
+            sport: The sport key (e.g., 'americanfootball_nfl')
+            date: Timestamp of the data snapshot in ISO8601 format (e.g., '2023-10-10T12:15:00Z').
+                  Defaults to current time if not provided.
+            date_format: Format of dates ('iso' or 'unix')
+            event_ids: Optional comma-separated game ids to filter specific events
+            commence_time_from: Optional ISO 8601 datetime to filter events starting from
+            commence_time_to: Optional ISO 8601 datetime to filter events until
+        
+        Returns:
+            List of historical events matching the specified criteria
+        """
+        endpoint = f"{self.base_url}/historical/sports/{sport}/events"
+        params = {
+            "apiKey": self.api_key,
+            "date": commence_time_to,
+            "dateFormat": date_format
+        }
+        
+        if event_ids:
+            params["eventIds"] = event_ids
+        if commence_time_from:
+            params["commenceTimeFrom"] = commence_time_from
+        # if commence_time_to:
+        #     params["commenceTimeTo"] = commence_time_to
+
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()

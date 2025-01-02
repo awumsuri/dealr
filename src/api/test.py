@@ -6,14 +6,14 @@ odds_api = OddsAPI()
 
 # Calculate dates for one year range
 end_date = datetime.now()
-start_date = end_date - timedelta(days=365)
+start_date = end_date - timedelta(days=365*4)
 
-event_id = odds_api.find_event_id(
-    sport_key='americanfootball_nfl',
-    team1='Kansas City Chiefs',
-    team2='San Francisco 49ers',
-    commence_time_from=start_date.strftime('%Y-%m-%d'),
-    commence_time_to=end_date.strftime('%Y-%m-%d')
+event_id = odds_api.find_event_ids(
+    sport_key="americanfootball_nfl",
+    team1='Portsmouth',
+    team2='Peterborough United',
+    commence_time_from=start_date.strftime('%Y-%m-%dT%H:%M:%SZ'),
+    commence_time_to=end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
 )
 if event_id:
     print(f"Found event ID: {event_id}")
