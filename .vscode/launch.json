@@ -12,6 +12,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Node Debugger: Current File",
+            "type": "node",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Test",
             "type": "debugpy",
             "request": "launch",
