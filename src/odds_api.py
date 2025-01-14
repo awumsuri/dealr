@@ -98,26 +98,21 @@ class OddsAPI:
     
     def get_historical_odds(
         self,
-        sport: str,
-        team: str,
-        regions: str = "us",
-        date_format: str = 'iso',
-        from_date: Optional[str] = None,
-        to_date: Optional[str] = None
+        sport: str,      
+        date: Optional[str] = None,
+        event_ids: Optional[str] = None,
+        regions: str = "eu,us"       
     ) -> Dict[str, Any]:
-        endpoint = f"{self.base_url}/sports/{sport}/odds-history"
+        endpoint = f"{self.base_url}/historical/sports/{sport}/odds"
         
         params = {
-            'apiKey': self.api_key,
-            'team': team,
+            'apiKey': self.api_key,           
+            'date': date,
             'regions': regions,
-            'date_format': date_format
+            'eventIds': event_ids
         }
         
-        if from_date:
-            params['from'] = from_date
-        if to_date:
-            params['to'] = to_date
+       
 
         response = requests.get(endpoint, params=params)
         return response.json()
@@ -218,11 +213,9 @@ class OddsAPI:
     def get_historical_events(
         self,
         sport: str,
+        regions: str = "eu,us",
         date: Optional[str] = None,
-        date_format: str = "iso",
-        event_ids: Optional[str] = None,
-        commence_time_from: Optional[str] = None,
-        commence_time_to: Optional[str] = None
+       
     ) -> List[Dict[str, Any]]:
         """
         Get historical events data for a specific sport and date.
@@ -242,16 +235,10 @@ class OddsAPI:
         endpoint = f"{self.base_url}/historical/sports/{sport}/events"
         params = {
             "apiKey": self.api_key,
-            "date": commence_time_to,
-            "dateFormat": date_format
+            "date": date,
+            "regions": regions,
         }
-        
-        if event_ids:
-            params["eventIds"] = event_ids
-        if commence_time_from:
-            params["commenceTimeFrom"] = commence_time_from
-        # if commence_time_to:
-        #     params["commenceTimeTo"] = commence_time_to
+      
 
         response = requests.get(endpoint, params=params)
         response.raise_for_status()

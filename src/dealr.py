@@ -2,6 +2,7 @@ from odds_api import OddsAPI
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 from constants.sports_types import SoccerUefaEuropeanChampionship
+from populate_odds import OddsPopulator
 
 class DataGatherer:
     def __init__(self):
@@ -22,7 +23,7 @@ class DataGatherer:
         # Get historical odds for both teams
         # Using last 30 days as example timeframe
         end_date = datetime.now().strftime("%Y-%m-%d")
-        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=750)).strftime("%Y-%m-%d")
         
         team1_history = self.api.get_historical_odds(
             sport=sport,
@@ -71,14 +72,10 @@ class DataGatherer:
         return processed_matches
 
 def main():
-    gatherer = DataGatherer()
+    populate_odds = OddsPopulator()
+    populate_odds.populate_historical_data()
     # Example usage
-    match_data = gatherer.get_historical_match_data(
-        team1="Manchester United",
-        team2="Manchester City"
-    )
-    processed_data = gatherer.process_match_data(match_data)
-    print(processed_data)
+   
 
 if __name__ == "__main__":
     main()
