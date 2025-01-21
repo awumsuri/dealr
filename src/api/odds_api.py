@@ -110,8 +110,7 @@ class OddsAPI:
             'date': date,
             'regions': regions,
             'eventIds': event_ids
-        }
-        
+        }       
        
 
         response = requests.get(endpoint, params=params)

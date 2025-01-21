@@ -1,4 +1,4 @@
-from odds_api import OddsAPI
+from api.odds_api import OddsAPI
 from datetime import datetime, timedelta
 from constants.sports_types import SoccerEnglandLeague1
 

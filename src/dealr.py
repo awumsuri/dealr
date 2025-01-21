@@ -1,4 +1,4 @@
-from odds_api import OddsAPI
+from api.odds_api import OddsAPI
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 from constants.sports_types import SoccerUefaEuropeanChampionship

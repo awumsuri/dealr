@@ -1,4 +1,4 @@
-from odds_api import OddsAPI
+from api.odds_api import OddsAPI
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import time
